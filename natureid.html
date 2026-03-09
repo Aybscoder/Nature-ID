@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NatureID — Identify Butterflies, Birds & Plants</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-dark: #0d3320;
+    --green-mid: #1a5c38;
+    --green-bright: #2d9e5f;
+    --green-light: #a8e6c1;
+    --amber: #e8a020;
+    --amber-light: #fdf3dc;
+    --cream: #f7f4ee;
+    --bark: #5c3d1e;
+    --text: #1c1c1c;
+    --text-muted: #6b7280;
+    --white: #ffffff;
+    --radius: 14px;
+    --shadow: 0 4px 24px rgba(13,51,32,0.10);
+    --shadow-lg: 0 12px 48px rgba(13,51,32,0.18);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text); min-height:100vh; }
+
+  /* NAV */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    background:rgba(13,51,32,0.97); backdrop-filter:blur(12px);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 28px; height:60px; box-shadow:0 2px 20px rgba(0,0,0,0.25);
+  }
+  .nav-logo { font-family:'Lora',serif; font-size:1.3rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .nav-logo span { color:var(--green-light); }
+  .nav-links { display:flex; gap:4px; align-items:center; }
+  .nav-btn {
+    background:none; border:none; color:#b5d9c5; font-family:'DM Sans',sans-serif;
+    font-size:.85rem; font-weight:500; padding:7px 14px; border-radius:8px;
+    cursor:pointer; transition:all .2s;
+  }
+  .nav-btn:hover, .nav-btn.active { background:rgba(255,255,255,0.12); color:#fff; }
+
+
+  /* PAGES */
+  .page { display:none; padding-top:60px; min-height:100vh; animation:fadeIn .35s ease; }
+  .page.active { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(145deg, #0d3320 0%, #1a5c38 50%, #225c35 100%);
+    min-height: 92vh; display:flex; align-items:center; position:relative; overflow:hidden;
+    padding: 60px 0 40px;
+  }
+  .hero-inner {
+    max-width:1200px; width:100%; margin:0 auto; padding:0 48px;
+    display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center;
+  }
+  @media(max-width:900px){
+    .hero-inner { grid-template-columns:1fr; padding:0 28px; }
+    .hero-mosaic { display:none; }
+  }
+  .hero-bg-icons { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .hero-bg-icons span {
+    position:absolute; font-size:7rem; opacity:0.07;
+    animation: floatBg 8s ease-in-out infinite;
+  }
+  .hero-bg-icons span:nth-child(1){top:8%;left:5%;animation-delay:0s;}
+  .hero-bg-icons span:nth-child(2){top:15%;right:8%;animation-delay:2s;font-size:6rem;}
+  .hero-bg-icons span:nth-child(3){bottom:20%;left:12%;animation-delay:4s;font-size:5rem;}
+  .hero-bg-icons span:nth-child(4){bottom:12%;right:6%;animation-delay:1s;font-size:8rem;}
+  .hero-bg-icons span:nth-child(5){top:45%;left:45%;animation-delay:3s;font-size:4rem;}
+  @keyframes floatBg {
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    50%{transform:translateY(-20px) rotate(5deg);}
+  }
+  .hero-content { position:relative; z-index:2; }
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:7px;
+    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+    color:#a8e6c1; font-size:.78rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    padding:5px 14px; border-radius:99px; margin-bottom:22px;
+  }
+  .hero-badge .dot { width:7px; height:7px; background:#4ade80; border-radius:50%; animation:pulse 2s infinite; }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .hero h1 {
+    font-family:'Lora',serif; font-size:clamp(2.4rem,6vw,4rem);
+    font-weight:700; color:#fff; line-height:1.15; margin-bottom:18px;
+  }
+  .hero h1 em { font-style:italic; color:var(--green-light); }
+  .hero p { font-size:1.05rem; color:#b5d9c5; line-height:1.7; margin-bottom:32px; max-width:520px; }
+  .hero-btns { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:40px; }
+  .btn-primary {
+    background:var(--green-bright); color:#fff; border:none; font-family:'DM Sans',sans-serif;
+    font-size:.95rem; font-weight:600; padding:14px 28px; border-radius:12px;
+    cursor:pointer; transition:all .2s; box-shadow:0 4px 20px rgba(45,158,95,0.4);
+    display:flex; align-items:center; gap:8px;
+  }
+  .btn-primary:hover { background:#25884f; transform:translateY(-2px); box-shadow:0 8px 28px rgba(45,158,95,0.5); }
+  .btn-outline {
+    background:rgba(255,255,255,0.1); color:#fff; border:1.5px solid rgba(255,255,255,0.3);
+    font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:500;
+    padding:13px 28px; border-radius:12px; cursor:pointer; transition:all .2s;
+    display:flex; align-items:center; gap:8px;
+  }
+  .btn-outline:hover { background:rgba(255,255,255,0.18); }
+  .hero-stats { display:flex; gap:32px; flex-wrap:wrap; }
+  .hero-stat { text-align:center; }
+  .hero-stat .num { font-family:'Lora',serif; font-size:1.8rem; font-weight:700; color:#fff; }
+  .hero-stat .lbl { font-size:.75rem; color:#7dbf99; text-transform:uppercase; letter-spacing:.05em; }
+
+  /* HERO MOSAIC */
+  .hero-mosaic { position:relative; z-index:2; }
+  .mosaic-grid {
+    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:200px 200px; gap:12px;
+  }
+  .mosaic-cell {
+    border-radius:16px; overflow:hidden; position:relative;
+    background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+  }
+  .mosaic-cell:first-child { grid-row:1/3; border-radius:20px; }
+  .mosaic-cell img {
+    width:100%; height:100%; object-fit:cover; display:block;
+    transition:transform .4s ease;
+  }
+  .mosaic-cell:hover img { transform:scale(1.05); }
+  .mosaic-cell .mosaic-label {
+    position:absolute; bottom:0; left:0; right:0; padding:10px 12px;
+    background:linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    color:#fff; font-size:.75rem; font-weight:600;
+  }
+  .mosaic-cell .mosaic-fallback {
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:3.5rem;
+  }
+
+  /* SECTION */
+  .section { padding:56px 28px; max-width:1200px; margin:0 auto; }
+  .section-title { font-family:'Lora',serif; font-size:1.9rem; font-weight:700; color:var(--green-dark); margin-bottom:6px; }
+  .section-sub { color:var(--text-muted); font-size:.95rem; margin-bottom:32px; }
+
+  /* HOW IT WORKS */
+  .how-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:20px; }
+  .how-card {
+    background:#fff; border-radius:var(--radius); padding:28px 24px; border:1px solid #e8f0eb;
+    transition:all .25s; position:relative; overflow:hidden;
+  }
+  .how-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--green-bright), var(--amber));
+  }
+  .how-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+  .how-icon { font-size:2.2rem; margin-bottom:14px; display:block; }
+  .how-card h3 { font-family:'Lora',serif; font-size:1.05rem; font-weight:600; color:var(--green-dark); margin-bottom:8px; }
+  .how-card p { font-size:.875rem; color:var(--text-muted); line-height:1.65; }
+
+  /* SPECIES GRID */
+  .species-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:20px; }
+  .species-card {
+    background:#fff; border-radius:var(--radius); overflow:hidden;
+    border:1px solid #e8f0eb; transition:all .25s; cursor:pointer;
+  }
+  .species-card:hover { transform:translateY(-5px); box-shadow:var(--shadow-lg); border-color:var(--green-bright); }
+  .species-img {
+    height:168px; background:linear-gradient(135deg,#dcf5e8,#b8e8cc);
+    display:flex; align-items:center; justify-content:center;
+    font-size:4rem; position:relative; overflow:hidden;
+  }
+  .species-img img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+  .species-img .cat-badge {
+    position:absolute; top:10px; left:10px; background:rgba(255,255,255,0.92);
+    font-size:.7rem; font-weight:600; padding:3px 10px; border-radius:99px; color:#374151;
+  }
+  .species-img .status-badge {
+    position:absolute; top:10px; right:10px; font-size:.65rem; font-weight:700;
+    padding:3px 8px; border-radius:99px; text-transform:uppercase; letter-spacing:.04em;
+  }
+  .status-LC{background:#dcfce7;color:#166534;} .status-NT{background:#fef9c3;color:#854d0e;}
+  .status-VU{background:#ffedd5;color:#9a3412;} .status-EN{background:#fee2e2;color:#991b1b;}
+  .status-CR{background:#fce7f3;color:#9d174d;}
+  .species-body { padding:14px 16px; }
+  .species-body h3 { font-family:'Lora',serif; font-size:1rem; font-weight:600; color:var(--green-dark); margin-bottom:2px; }
+  .species-body .sci { font-size:.8rem; color:var(--green-bright); font-style:italic; margin-bottom:8px; }
+  .species-body p { font-size:.8rem; color:var(--text-muted); line-height:1.5;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:10px; }
+  .region-tags { display:flex; gap:5px; flex-wrap:wrap; }
+  .region-tag { background:#f0f9f4; color:var(--green-mid); font-size:.7rem; padding:2px 8px; border-radius:99px; }
+
+  /* IDENTIFY PAGE */
+  .identify-wrap { display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start; }
+  @media(max-width:768px){ .identify-wrap{grid-template-columns:1fr;} }
+  .id-panel { background:#fff; border-radius:var(--radius); border:1px solid #e8f0eb; overflow:hidden; box-shadow:var(--shadow); }
+  .id-tabs { display:flex; border-bottom:1px solid #f0f0f0; }
+  .id-tab {
+    flex:1; padding:14px 8px; border:none; background:none; font-family:'DM Sans',sans-serif;
+    font-size:.82rem; font-weight:600; color:var(--text-muted); cursor:pointer; transition:all .2s;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .id-tab.active { color:var(--green-bright); border-bottom-color:var(--green-bright); background:#f6fdf9; }
+  .id-tab:hover { color:var(--green-mid); }
+  .id-body { padding:24px; }
+  .upload-zone {
+    border:2px dashed #c4dece; border-radius:12px; padding:40px 20px; text-align:center;
+    cursor:pointer; transition:all .25s; background:#f9fdf9;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color:var(--green-bright); background:#f0faf4; }
+  .upload-zone .uz-icon { font-size:3rem; margin-bottom:10px; }
+  .upload-zone p { color:var(--text-muted); font-size:.875rem; }
+  .upload-zone small { color:#aaa; font-size:.75rem; }
+  .preview-img { width:100%; max-height:240px; object-fit:contain; border-radius:10px; margin-bottom:8px; }
+  .remove-btn { background:none; border:none; color:#ef4444; font-size:.8rem; cursor:pointer; }
+  textarea.desc-input {
+    width:100%; border:1.5px solid #e2e8f0; border-radius:10px; padding:14px;
+    font-family:'DM Sans',sans-serif; font-size:.875rem; height:140px; resize:none;
+    transition:border-color .2s; outline:none;
+  }
+  textarea.desc-input:focus { border-color:var(--green-bright); }
+  .btn-identify {
+    width:100%; background:var(--green-dark); color:#fff; border:none;
+    font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:600;
+    padding:15px; border-radius:12px; cursor:pointer; margin-top:16px;
+    transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-identify:hover { background:var(--green-mid); }
+  .btn-identify:disabled { background:#9ca3af; cursor:not-allowed; }
+  .results-panel { background:#fff; border-radius:var(--radius); border:1px solid #e8f0eb; box-shadow:var(--shadow); }
+  .results-empty { padding:48px 24px; text-align:center; color:var(--text-muted); }
+  .results-empty .re-icon { font-size:4rem; margin-bottom:12px; opacity:.35; }
+  .ai-note { background:#f0faf4; border:1px solid #c4e8d0; border-radius:10px; padding:14px 16px; margin:16px; }
+  .ai-note .ai-label { font-size:.72rem; font-weight:700; color:var(--green-mid); text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; }
+  .ai-note p { font-size:.84rem; color:#374151; line-height:1.6; }
+  .match-list { padding:0 16px 16px; display:flex; flex-direction:column; gap:10px; }
+  .match-item {
+    display:flex; gap:12px; padding:12px; border:1.5px solid #f0f0f0; border-radius:12px;
+    cursor:pointer; transition:all .2s; align-items:flex-start;
+  }
+  .match-item:hover { border-color:var(--green-bright); background:#f9fdf9; }
+  .match-item.top { border-color:var(--green-bright); background:#f3fbf6; }
+  .match-thumb { width:60px; height:60px; border-radius:10px; object-fit:cover; flex-shrink:0; background:#e8f5ee; display:flex; align-items:center; justify-content:center; font-size:1.8rem; overflow:hidden; }
+  .match-thumb img { width:100%; height:100%; object-fit:cover; }
+  .match-info { flex:1; min-width:0; }
+  .match-info h4 { font-family:'Lora',serif; font-size:.95rem; font-weight:600; color:var(--green-dark); }
+  .match-info .match-sci { font-size:.75rem; color:var(--green-bright); font-style:italic; }
+  .conf-bar { display:flex; align-items:center; gap:8px; margin-top:6px; }
+  .conf-track { flex:1; height:5px; background:#e8f0eb; border-radius:99px; overflow:hidden; }
+  .conf-fill { height:100%; background:linear-gradient(90deg,var(--green-bright),var(--green-mid)); border-radius:99px; transition:width .6s ease; }
+  .conf-pct { font-size:.75rem; font-weight:600; color:var(--text-muted); }
+  .best-tag { background:var(--green-bright); color:#fff; font-size:.65rem; font-weight:700; padding:2px 7px; border-radius:99px; margin-left:6px; }
+  .loading-state { padding:40px 24px; text-align:center; }
+  .spinner { width:40px; height:40px; border:3px solid #e8f0eb; border-top-color:var(--green-bright); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-steps { text-align:left; max-width:220px; margin:16px auto 0; }
+  .loading-step { display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:.82rem; color:var(--text-muted); }
+  .step-dot { width:8px; height:8px; border-radius:50%; background:#c4dece; flex-shrink:0; }
+  .step-dot.active { background:var(--green-bright); animation:pulse 1s infinite; }
+
+  /* EXPLORE */
+  .search-bar {
+    display:flex; gap:12px; margin-bottom:28px; flex-wrap:wrap;
+  }
+  .search-input-wrap { flex:1; min-width:240px; position:relative; }
+  .search-input-wrap svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#9ca3af; }
+  .search-input {
+    width:100%; border:1.5px solid #e2e8f0; border-radius:12px;
+    padding:12px 14px 12px 42px; font-family:'DM Sans',sans-serif; font-size:.9rem;
+    outline:none; transition:border-color .2s; background:#fff;
+  }
+  .search-input:focus { border-color:var(--green-bright); }
+  .cat-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+  .cat-filter {
+    padding:7px 16px; border-radius:99px; border:1.5px solid #e2e8f0;
+    background:#fff; font-family:'DM Sans',sans-serif; font-size:.82rem; font-weight:500;
+    cursor:pointer; transition:all .2s; color:var(--text-muted);
+  }
+  .cat-filter.active { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+  .cat-filter:hover:not(.active) { border-color:var(--green-bright); color:var(--green-bright); }
+  .results-count { font-size:.85rem; color:var(--text-muted); margin-bottom:18px; }
+
+  /* SPECIES DETAIL */
+  .detail-grid { display:grid; grid-template-columns:1fr 1.2fr; gap:32px; align-items:start; }
+  @media(max-width:768px){ .detail-grid{grid-template-columns:1fr;} }
+  .detail-img { border-radius:var(--radius); overflow:hidden; background:#f0faf4; }
+  .detail-img img { width:100%; height:320px; object-fit:cover; display:block; }
+  .detail-img .detail-img-placeholder { height:320px; display:flex; align-items:center; justify-content:center; font-size:6rem; }
+  .fact-box { background:var(--amber-light); border:1px solid #f5dfa0; border-radius:12px; padding:18px; margin-top:16px; }
+  .fact-box .fact-label { font-size:.7rem; font-weight:700; color:#9a6e10; text-transform:uppercase; letter-spacing:.07em; margin-bottom:6px; }
+  .fact-box p { font-size:.875rem; color:#5c4010; line-height:1.6; }
+  .detail-title { font-family:'Lora',serif; font-size:2rem; font-weight:700; color:var(--green-dark); }
+  .detail-sci { font-family:'Lora',serif; font-size:1.05rem; font-style:italic; color:var(--green-bright); margin-bottom:4px; }
+  .detail-family { font-size:.82rem; color:var(--text-muted); margin-bottom:16px; }
+  .detail-desc { font-size:.925rem; color:#374151; line-height:1.75; margin-bottom:20px; }
+  .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+  .info-box { background:#f7f9f7; border-radius:10px; padding:14px; border:1px solid #e8f0eb; }
+  .info-box .info-lbl { font-size:.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .info-box .info-tags { display:flex; flex-wrap:wrap; gap:4px; }
+  .info-tag { background:#e0f2e9; color:var(--green-mid); font-size:.73rem; padding:2px 8px; border-radius:99px; }
+  .spec-table { width:100%; font-size:.84rem; }
+  .spec-table tr td { padding:6px 0; }
+  .spec-table tr td:first-child { color:var(--text-muted); width:42%; }
+  .spec-table tr td:last-child { font-weight:500; color:var(--text); }
+  .spec-table tr { border-bottom:1px solid #f0f0f0; }
+  .back-btn {
+    display:inline-flex; align-items:center; gap:6px; background:#fff; border:1.5px solid #e2e8f0;
+    color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:.85rem; font-weight:500;
+    padding:8px 16px; border-radius:8px; cursor:pointer; margin-bottom:24px; transition:all .2s;
+  }
+  .back-btn:hover { border-color:var(--green-bright); color:var(--green-bright); }
+
+  /* ADMIN */
+  .admin-login { max-width:420px; margin:80px auto; background:#fff; border-radius:var(--radius); padding:40px; box-shadow:var(--shadow-lg); border:1px solid #e8f0eb; text-align:center; }
+  .admin-login h2 { font-family:'Lora',serif; font-size:1.6rem; color:var(--green-dark); margin:12px 0 6px; }
+  .admin-login p { color:var(--text-muted); font-size:.875rem; margin-bottom:24px; }
+  .form-input {
+    width:100%; border:1.5px solid #e2e8f0; border-radius:10px;
+    padding:12px 14px; font-family:'DM Sans',sans-serif; font-size:.9rem;
+    outline:none; transition:border-color .2s; margin-bottom:12px;
+  }
+  .form-input:focus { border-color:var(--green-bright); }
+  .btn-login {
+    width:100%; background:var(--green-dark); color:#fff; border:none;
+    font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:600;
+    padding:13px; border-radius:10px; cursor:pointer; transition:all .2s;
+  }
+  .btn-login:hover { background:var(--green-mid); }
+  .admin-tabs { display:flex; gap:8px; margin-bottom:28px; flex-wrap:wrap; }
+  .admin-tab {
+    padding:9px 20px; border-radius:10px; border:1.5px solid #e2e8f0;
+    background:#fff; font-family:'DM Sans',sans-serif; font-size:.85rem; font-weight:500;
+    cursor:pointer; transition:all .2s; color:var(--text-muted);
+  }
+  .admin-tab.active { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+  .stats-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:32px; }
+  .stat-card { background:#fff; border-radius:12px; padding:22px; border:1px solid #e8f0eb; text-align:center; }
+  .stat-card .sc-icon { font-size:2.5rem; margin-bottom:8px; }
+  .stat-card .sc-num { font-family:'Lora',serif; font-size:2rem; font-weight:700; color:var(--green-dark); }
+  .stat-card .sc-lbl { font-size:.8rem; color:var(--text-muted); margin-top:2px; }
+  .quick-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:32px; }
+  .qa-btn {
+    display:flex; align-items:center; gap:12px; padding:18px; background:#fff;
+    border:1.5px solid #e8f0eb; border-radius:12px; cursor:pointer; transition:all .2s; text-align:left;
+  }
+  .qa-btn:hover { border-color:var(--green-bright); transform:translateY(-2px); box-shadow:var(--shadow); }
+  .qa-btn .qa-icon { font-size:1.8rem; }
+  .qa-btn h4 { font-size:.9rem; font-weight:600; color:var(--green-dark); }
+  .qa-btn p { font-size:.76rem; color:var(--text-muted); }
+  .setup-box { background:#eff8ff; border:1px solid #bfdbfe; border-radius:12px; padding:20px; }
+  .setup-box h4 { font-weight:600; color:#1e40af; margin-bottom:12px; }
+  .setup-box ol { padding-left:18px; font-size:.85rem; color:#1e3a8a; line-height:2; }
+  .setup-box code { background:#dbeafe; padding:1px 5px; border-radius:4px; font-size:.8rem; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:600px){ .form-grid{grid-template-columns:1fr;} }
+  .form-group { display:flex; flex-direction:column; gap:5px; }
+  .form-group.full { grid-column:1/-1; }
+  .form-label { font-size:.8rem; font-weight:600; color:#374151; }
+  .form-label .req { color:#ef4444; }
+  .form-select { border:1.5px solid #e2e8f0; border-radius:10px; padding:11px 14px; font-family:'DM Sans',sans-serif; font-size:.875rem; outline:none; transition:border-color .2s; }
+  .form-select:focus { border-color:var(--green-bright); }
+  .form-textarea { border:1.5px solid #e2e8f0; border-radius:10px; padding:12px 14px; font-family:'DM Sans',sans-serif; font-size:.875rem; outline:none; resize:vertical; min-height:90px; transition:border-color .2s; }
+  .form-textarea:focus { border-color:var(--green-bright); }
+  .btn-save {
+    background:var(--green-bright); color:#fff; border:none;
+    font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:600;
+    padding:13px 32px; border-radius:12px; cursor:pointer; transition:all .2s; margin-top:8px;
+  }
+  .btn-save:hover { background:var(--green-mid); }
+  .btn-clear { background:#fff; color:var(--text-muted); border:1.5px solid #e2e8f0; font-family:'DM Sans',sans-serif; font-size:.9rem; padding:12px 24px; border-radius:12px; cursor:pointer; margin-top:8px; margin-left:8px; }
+  .toast {
+    position:fixed; bottom:24px; right:24px; z-index:999;
+    background:var(--green-dark); color:#fff; padding:14px 20px; border-radius:12px;
+    font-size:.875rem; font-weight:500; box-shadow:var(--shadow-lg);
+    display:none; animation:slideUp .3s ease;
+  }
+  .toast.show { display:flex; align-items:center; gap:8px; }
+  .toast.error { background:#dc2626; }
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .species-table { width:100%; border-collapse:collapse; font-size:.84rem; }
+  .species-table th { text-align:left; padding:10px 14px; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); background:#f9fafb; border-bottom:1px solid #e8f0eb; }
+  .species-table td { padding:12px 14px; border-bottom:1px solid #f5f5f5; vertical-align:middle; }
+  .species-table tr:hover td { background:#f9fdf9; }
+  .species-table .view-link { color:var(--green-bright); font-weight:600; cursor:pointer; }
+  .species-table .view-link:hover { color:var(--green-dark); }
+  .empty-state { text-align:center; padding:40px; color:var(--text-muted); }
+  .empty-state .es-icon { font-size:3.5rem; margin-bottom:12px; opacity:.4; }
+
+  /* DETAIL PAGE tags */
+  .tag-pill { background:#f0f4f0; color:#374151; font-size:.72rem; padding:3px 10px; border-radius:99px; }
+
+  /* ABOUT */
+  .about-hero { background:linear-gradient(145deg,#0d3320,#1a5c38); padding:64px 28px; text-align:center; color:#fff; }
+  .about-hero h1 { font-family:'Lora',serif; font-size:2.5rem; font-weight:700; margin-bottom:10px; }
+  .about-hero p { color:#b5d9c5; font-size:1.05rem; }
+  .about-section { background:#fff; border-radius:var(--radius); padding:28px; border:1px solid #e8f0eb; margin-bottom:20px; }
+  .about-section h2 { font-family:'Lora',serif; font-size:1.4rem; color:var(--green-dark); margin-bottom:14px; }
+  .about-section p { font-size:.9rem; color:#374151; line-height:1.75; margin-bottom:10px; }
+  .feature-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+  .feature-item { display:flex; gap:12px; padding:14px; background:#f7fdf9; border-radius:10px; border:1px solid #e0f2e9; }
+  .feature-item .fi-icon { font-size:1.6rem; flex-shrink:0; }
+  .feature-item h4 { font-size:.875rem; font-weight:600; color:var(--green-dark); margin-bottom:3px; }
+  .feature-item p { font-size:.78rem; color:var(--text-muted); line-height:1.5; }
+  .deploy-steps { space-y:16px; }
+  .deploy-step { display:flex; gap:14px; margin-bottom:18px; }
+  .step-num { width:28px; height:28px; min-width:28px; background:var(--green-bright); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700; }
+  .step-body h4 { font-size:.9rem; font-weight:600; color:var(--green-dark); margin-bottom:4px; }
+  .step-body code { display:block; background:#1c2833; color:#a8e6c1; padding:8px 12px; border-radius:8px; font-size:.78rem; margin-top:4px; white-space:pre-wrap; }
+  .error-msg { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; border-radius:10px; padding:12px 16px; font-size:.85rem; margin-top:12px; display:none; }
+  .error-msg.show { display:block; }
+
+  /* responsive */
+  @media(max-width:600px){
+    nav { padding:0 16px; }
+    .nav-links { gap:0; }
+    .nav-btn { padding:6px 8px; font-size:.78rem; }
+    .hero { padding:48px 20px 36px; }
+    .section { padding:40px 20px; }
+    .identify-wrap { gap:20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">🦋 Nature<span>ID</span></div>
+  <div class="nav-links">
+    <button class="nav-btn active" onclick="showPage('home')">Home</button>
+    <button class="nav-btn" onclick="showPage('identify')">Identify</button>
+    <button class="nav-btn" onclick="showPage('explore')">Explore</button>
+    <button class="nav-btn" onclick="showPage('about')">About</button>
+
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ===================== HOME ===================== -->
+<div class="page active" id="page-home">
+  <section class="hero">
+    <div class="hero-bg-icons">
+      <span>🦋</span><span>🌿</span><span>🐦</span><span>🌸</span><span>🌳</span>
+    </div>
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-badge"><span class="dot"></span> AI-Powered Species Identification</div>
+        <h1>Discover Nature<br><em>Around You</em></h1>
+        <p>Identify butterflies, birds, plants and more using AI. Upload a photo, use your camera, or describe what you see. Built for Kerala's rich biodiversity and beyond.</p>
+        <div class="hero-btns">
+          <button class="btn-primary" onclick="showPage('identify')">📷 Identify Now</button>
+          <button class="btn-outline" onclick="showPage('explore')">🔍 Explore Species</button>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="num" id="stat-butterflies">5+</div><div class="lbl">Butterflies</div></div>
+          <div class="hero-stat"><div class="num" id="stat-birds">3+</div><div class="lbl">Birds</div></div>
+          <div class="hero-stat"><div class="num" id="stat-plants">3+</div><div class="lbl">Plants</div></div>
+          <div class="hero-stat"><div class="num" id="stat-total">11+</div><div class="lbl">Total Species</div></div>
+        </div>
+      </div>
+      <!-- Species photo mosaic -->
+      <div class="hero-mosaic" id="hero-mosaic"></div>
+    </div>
+  </section>
+
+  <div class="section">
+    <h2 class="section-title">How It Works</h2>
+    <p class="section-sub">Three simple ways to identify species around you</p>
+    <div class="how-grid">
+      <div class="how-card">
+        <span class="how-icon">📷</span>
+        <h3>Upload a Photo</h3>
+        <p>Take or upload any image of a butterfly, bird, or plant. Our AI analyzes visual features and patterns instantly.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-icon">🤖</span>
+        <h3>AI Analysis</h3>
+        <p>Advanced AI cross-references visual patterns with our curated database of local and global species.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-icon">📖</span>
+        <h3>Get Full Details</h3>
+        <p>Receive detailed information: name, habitat, conservation status, fun facts, and more.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#f0faf4; padding:8px 0;">
+  <div class="section" style="padding-top:40px; padding-bottom:48px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px;">
+      <div>
+        <h2 class="section-title">Featured Species</h2>
+        <p class="section-sub" style="margin-bottom:0;">Explore Kerala's incredible biodiversity</p>
+      </div>
+      <button class="btn-outline" style="background:var(--green-dark);border-color:var(--green-dark);padding:10px 22px;font-size:.88rem;" onclick="showPage('explore')">View All →</button>
+    </div>
+    <div class="species-grid" id="home-featured"></div>
+  </div>
+  </div>
+
+  <div class="hero" style="min-height:auto; padding:64px 28px; text-align:center;">
+    <div style="max-width:540px; margin:0 auto; position:relative;z-index:2;">
+      <h2 style="font-family:'Lora',serif;font-size:2rem;color:#fff;margin-bottom:12px;">Ready to Explore?</h2>
+      <p style="color:#b5d9c5;margin-bottom:28px;">Upload a photo of any species and our AI will tell you exactly what it is, where it lives, and why it matters.</p>
+      <button class="btn-primary" style="margin:0 auto;background:#fff;color:var(--green-dark);box-shadow:0 4px 20px rgba(0,0,0,0.2);" onclick="showPage('identify')">📷 Start Identifying</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== IDENTIFY ===================== -->
+<div class="page" id="page-identify">
+  <div style="background:linear-gradient(145deg,#0d3320,#1a5c38); padding:52px 28px 40px; text-align:center; color:#fff;">
+    <h1 style="font-family:'Lora',serif;font-size:2.5rem;margin-bottom:8px;">🔬 Identify Species</h1>
+    <p style="color:#b5d9c5;font-size:1rem;">Upload a photo, use your camera, or describe what you see</p>
+    <div style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);padding:5px 14px;border-radius:99px;font-size:.78rem;color:#a8e6c1;">
+      🌿 Powered by <strong style="color:#fff;">iNaturalist Vision AI</strong> — 300,000+ species
+    </div>
+  </div>
+  <div class="section">
+    <div class="identify-wrap">
+      <!-- Input Panel -->
+      <div class="id-panel">
+        <div class="id-tabs">
+          <button class="id-tab active" onclick="switchTab('upload')">📷 Upload</button>
+          <button class="id-tab" onclick="switchTab('camera')">📸 Camera</button>
+          <button class="id-tab" onclick="switchTab('text')">📝 Describe</button>
+        </div>
+        <div class="id-body">
+          <!-- Upload tab -->
+          <div id="tab-upload">
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" 
+              ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+              <div id="upload-empty">
+                <div class="uz-icon">🖼️</div>
+                <p>Drop image here or click to upload</p>
+                <small>JPG, PNG, WEBP up to 10MB</small>
+              </div>
+              <div id="upload-preview" style="display:none;">
+                <img id="preview-img" class="preview-img" src="" alt="Preview">
+              </div>
+            </div>
+            <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileInput(this)">
+            <div id="remove-wrap" style="display:none;margin-top:6px;">
+              <button class="remove-btn" onclick="removeImage()">× Remove image</button>
+            </div>
+          </div>
+
+          <!-- Camera tab -->
+          <div id="tab-camera" style="display:none; text-align:center;">
+            <video id="camera-video" style="display:none;width:100%;max-height:240px;border-radius:12px;object-fit:cover;"></video>
+            <div id="camera-empty">
+              <div style="padding:36px 20px;">
+                <div style="font-size:3rem;margin-bottom:10px;">📸</div>
+                <p style="color:var(--text-muted);margin-bottom:16px;font-size:.875rem;">Use your device camera to capture a species</p>
+                <button class="btn-primary" style="margin:0 auto;" onclick="startCamera()">Start Camera</button>
+              </div>
+            </div>
+            <div id="camera-controls" style="display:none;margin-top:12px;">
+              <button class="btn-primary" style="margin:0 auto;" onclick="capturePhoto()">📷 Capture Photo</button>
+            </div>
+            <div id="camera-result" style="display:none;">
+              <img id="camera-img" class="preview-img" src="" alt="Captured">
+              <button class="remove-btn" onclick="retakePhoto()">× Retake photo</button>
+            </div>
+          </div>
+
+          <!-- Text tab -->
+          <div id="tab-text" style="display:none;">
+            <label style="display:block;font-size:.8rem;font-weight:600;color:#374151;margin-bottom:8px;">Describe the species you saw</label>
+            <textarea id="text-input" class="desc-input" placeholder="e.g. 'A bright orange butterfly with black borders seen in my garden in Kerala' or 'Small blue bird with red breast near a stream in the Western Ghats'"></textarea>
+          </div>
+
+          <div class="error-msg" id="id-error"></div>
+          <button class="btn-identify" id="identify-btn" onclick="identifySpecies()">🔍 Identify Species</button>
+        </div>
+      </div>
+
+      <!-- Results Panel -->
+      <div class="results-panel" id="results-panel">
+        <div class="results-empty" id="results-empty">
+          <div class="re-icon">🦋</div>
+          <p style="font-weight:500;margin-bottom:6px;color:#374151;">Results will appear here</p>
+          <p style="font-size:.82rem;">Upload a photo or describe a species to identify it</p>
+          <div style="margin-top:24px;text-align:left;background:#f7fdf9;border-radius:10px;padding:14px 18px;">
+            <p style="font-size:.72rem;font-weight:700;color:var(--green-mid);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Tips for best results</p>
+            <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:6px;">📷 Clear, well-lit photos work best</p>
+            <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:6px;">🦋 Capture full wing spread for butterflies</p>
+            <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:6px;">🐦 Include beak and tail in bird photos</p>
+            <p style="font-size:.82rem;color:var(--text-muted);">🌿 Show leaves, flowers, or bark for plants</p>
+          </div>
+        </div>
+        <div id="results-loading" style="display:none;" class="loading-state">
+          <div class="spinner"></div>
+          <p style="font-weight:500;color:#374151;margin-bottom:6px;">Analyzing...</p>
+          <p style="font-size:.82rem;color:var(--text-muted);">Cross-referencing with species database</p>
+          <div class="loading-steps">
+            <div class="loading-step"><div class="step-dot active"></div>Uploading image to iNaturalist</div>
+            <div class="loading-step"><div class="step-dot"></div>Running Vision AI model</div>
+            <div class="loading-step"><div class="step-dot"></div>Matching 300,000+ species</div>
+            <div class="loading-step"><div class="step-dot"></div>Fetching species details</div>
+          </div>
+        </div>
+        <div id="results-content" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== EXPLORE ===================== -->
+<div class="page" id="page-explore">
+  <div style="background:linear-gradient(145deg,#0d3320,#1a5c38); padding:52px 28px 40px; text-align:center; color:#fff;">
+    <h1 style="font-family:'Lora',serif;font-size:2.5rem;margin-bottom:8px;">🌍 Explore Species</h1>
+    <p style="color:#b5d9c5;margin-bottom:24px;">Browse the full database of Kerala's biodiversity</p>
+    <div style="max-width:500px;margin:0 auto;position:relative;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9ca3af;pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="explore-search" class="search-input" style="background:rgba(255,255,255,0.95);font-size:.95rem;" placeholder="Search by name, region, habitat..." oninput="renderExplore()">
+    </div>
+  </div>
+  <div class="section">
+    <div class="cat-filters" id="cat-filters">
+      <button class="cat-filter active" data-cat="all" onclick="setCat(this,'all')">🌍 All</button>
+      <button class="cat-filter" data-cat="butterfly" onclick="setCat(this,'butterfly')">🦋 Butterflies</button>
+      <button class="cat-filter" data-cat="bird" onclick="setCat(this,'bird')">🐦 Birds</button>
+      <button class="cat-filter" data-cat="plant" onclick="setCat(this,'plant')">🌿 Plants</button>
+      <button class="cat-filter" data-cat="insect" onclick="setCat(this,'insect')">🪲 Insects</button>
+    </div>
+    <p class="results-count" id="explore-count"></p>
+    <div class="species-grid" id="explore-grid"></div>
+  </div>
+</div>
+
+<!-- ===================== SPECIES DETAIL ===================== -->
+<div class="page" id="page-detail">
+  <div class="section" id="detail-content"></div>
+</div>
+
+<!-- ===================== ADMIN ===================== -->
+<div class="page" id="page-admin">
+  <!-- Login gate -->
+  <div id="admin-login-wrap">
+    <div class="admin-login">
+      <div style="font-size:3rem;">🔐</div>
+      <h2>Admin Panel</h2>
+      <p>Enter your admin key to manage the species database</p>
+      <input type="password" id="admin-key-input" class="form-input" placeholder="Admin key..." onkeydown="if(event.key==='Enter')adminLogin()">
+      <div class="error-msg" id="admin-login-error"></div>
+      <button class="btn-login" onclick="adminLogin()">Login to Admin Panel</button>
+      <p style="margin-top:14px;font-size:.77rem;color:var(--text-muted);">Demo key: <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;">natureid-admin-2024</code></p>
+    </div>
+  </div>
+
+  <!-- Admin dashboard -->
+  <div id="admin-dashboard" style="display:none;">
+    <div style="background:linear-gradient(145deg,#0d3320,#1a5c38);padding:40px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h1 style="font-family:'Lora',serif;font-size:2rem;margin-bottom:4px;">🛠️ Admin Panel</h1>
+        <p style="color:#b5d9c5;">Manage species database and content</p>
+      </div>
+      <button onclick="adminLogout()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;">Logout</button>
+    </div>
+    <div class="section">
+      <div class="admin-tabs">
+        <button class="admin-tab active" onclick="switchAdminTab('dashboard')">📊 Dashboard</button>
+        <button class="admin-tab" onclick="switchAdminTab('add')">➕ Add Species</button>
+        <button class="admin-tab" onclick="switchAdminTab('list')">📋 View All</button>
+      </div>
+
+      <!-- Dashboard tab -->
+      <div id="atab-dashboard">
+        <div class="stats-cards" id="admin-stats-cards"></div>
+        <div class="quick-actions" style="margin-bottom:24px;">
+          <div class="qa-btn" onclick="switchAdminTab('add')">
+            <span class="qa-icon">➕</span>
+            <div><h4>Add New Species</h4><p>Expand the database</p></div>
+          </div>
+          <div class="qa-btn" onclick="showPage('explore')">
+            <span class="qa-icon">👁️</span>
+            <div><h4>View Public Site</h4><p>See how it looks</p></div>
+          </div>
+          <div class="qa-btn" onclick="showPage('identify')">
+            <span class="qa-icon">🔬</span>
+            <div><h4>Test Identification</h4><p>Try the AI identify</p></div>
+          </div>
+        </div>
+        <div class="setup-box">
+          <h4>🔑 Setup Instructions</h4>
+          <ol>
+            <li>Copy <code>.env.local.example</code> to <code>.env.local</code></li>
+            <li>Add your Anthropic API key: <code>ANTHROPIC_API_KEY=sk-ant-...</code></li>
+            <li>Change admin key: <code>ADMIN_KEY=your-secret-key</code></li>
+            <li>Deploy to Vercel: <code>npx vercel</code> — get free public URL</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Add Species tab -->
+      <div id="atab-add" style="display:none;">
+        <div style="background:#fff;border-radius:var(--radius);border:1px solid #e8f0eb;padding:28px;max-width:780px;">
+          <h2 style="font-family:'Lora',serif;font-size:1.4rem;color:var(--green-dark);margin-bottom:20px;">➕ Add New Species</h2>
+          <div id="add-success" style="display:none;background:#f0faf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.875rem;color:var(--green-mid);"></div>
+          <div id="add-error" style="display:none;" class="error-msg"></div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Common Name <span class="req">*</span></label><input class="form-input" id="f-commonName" placeholder="e.g. Common Jezebel"></div>
+            <div class="form-group"><label class="form-label">Scientific Name <span class="req">*</span></label><input class="form-input" id="f-scientificName" placeholder="e.g. Delias eucharis"></div>
+            <div class="form-group"><label class="form-label">Category <span class="req">*</span></label>
+              <select class="form-select" id="f-category">
+                <option value="butterfly">🦋 Butterfly</option>
+                <option value="bird">🐦 Bird</option>
+                <option value="plant">🌿 Plant</option>
+                <option value="insect">🪲 Insect</option>
+                <option value="mammal">🦊 Mammal</option>
+                <option value="reptile">🦎 Reptile</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Family</label><input class="form-input" id="f-family" placeholder="e.g. Pieridae"></div>
+            <div class="form-group"><label class="form-label">Conservation Status</label>
+              <select class="form-select" id="f-status">
+                <option value="LC">LC — Least Concern</option>
+                <option value="NT">NT — Near Threatened</option>
+                <option value="VU">VU — Vulnerable</option>
+                <option value="EN">EN — Endangered</option>
+                <option value="CR">CR — Critically Endangered</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Image URL</label><input class="form-input" id="f-imageUrl" placeholder="https://..."></div>
+            <div class="form-group full"><label class="form-label">Description <span class="req">*</span></label><textarea class="form-textarea" id="f-description" placeholder="Describe the species appearance, behavior, and significance..."></textarea></div>
+            <div class="form-group full"><label class="form-label">Fun Fact</label><textarea class="form-textarea" id="f-funFact" style="min-height:70px;" placeholder="An interesting fact about this species..."></textarea></div>
+            <div class="form-group"><label class="form-label">Habitat <span style="color:var(--text-muted);font-weight:400;">(comma-separated)</span></label><input class="form-input" id="f-habitat" placeholder="Forest edges, Gardens, Wetlands"></div>
+            <div class="form-group"><label class="form-label">Region <span style="color:var(--text-muted);font-weight:400;">(comma-separated)</span></label><input class="form-input" id="f-region" placeholder="Kerala, Western Ghats, Tamil Nadu"></div>
+            <div class="form-group"><label class="form-label">Tags <span style="color:var(--text-muted);font-weight:400;">(comma-separated)</span></label><input class="form-input" id="f-tags" placeholder="colorful, endemic, rare"></div>
+            <div class="form-group"><label class="form-label">Wingspan / Size</label><input class="form-input" id="f-wingspan" placeholder="65–80 mm"></div>
+            <div class="form-group"><label class="form-label">Flight Period / Bloom Season</label><input class="form-input" id="f-period" placeholder="Year-round / July–September"></div>
+            <div class="form-group full"><label class="form-label">Song/Call Description (birds)</label><input class="form-input" id="f-song" placeholder="Melodious whistles resembling a human whistling"></div>
+          </div>
+          <div>
+            <button class="btn-save" onclick="saveSpecies()">💾 Save Species</button>
+            <button class="btn-clear" onclick="clearForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- List tab -->
+      <div id="atab-list" style="display:none;">
+        <div style="background:#fff;border-radius:var(--radius);border:1px solid #e8f0eb;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-weight:600;color:var(--green-dark);" id="list-count">All Species</h3>
+            <button class="btn-save" style="padding:8px 18px;font-size:.85rem;" onclick="switchAdminTab('add')">➕ Add New</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="species-table" id="admin-species-table">
+              <thead><tr><th>#</th><th>Name</th><th>Category</th><th>Status</th><th>Region</th><th>Actions</th></tr></thead>
+              <tbody id="admin-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ABOUT ===================== -->
+<div class="page" id="page-about">
+  <div class="about-hero">
+    <h1>🌿 About NatureID</h1>
+    <p>Building tools for biodiversity through citizen science and AI</p>
+  </div>
+  <div class="section" style="max-width:860px;">
+    <div class="about-section">
+      <h2>What is NatureID?</h2>
+      <p>NatureID is an AI-powered nature identification platform designed for Kerala's rich biodiversity — and scalable to any region. Whether you're a researcher studying endemic species, a nature enthusiast photographing butterflies, or a curious student who found an interesting bird, NatureID helps you identify and learn about it instantly.</p>
+      <p>Built with the Western Ghats biodiversity hotspot in mind, our database includes butterflies, birds, plants, and more — with detailed information on habitat, conservation status, and local ecology.</p>
+    </div>
+    <div class="about-section">
+      <h2>Key Features</h2>
+      <div class="feature-grid">
+        <div class="feature-item"><span class="fi-icon">📷</span><div><h4>Photo Identification</h4><p>Upload any photo — AI analyzes visual features and matches instantly.</p></div></div>
+        <div class="feature-item"><span class="fi-icon">📸</span><div><h4>Live Camera Mode</h4><p>Use your phone camera directly to capture and identify species.</p></div></div>
+        <div class="feature-item"><span class="fi-icon">🔍</span><div><h4>Text Search</h4><p>Describe what you saw in plain language and find the closest match.</p></div></div>
+        <div class="feature-item"><span class="fi-icon">🗄️</span><div><h4>Curated Database</h4><p>Scientific names, conservation status, habitats, and fun facts.</p></div></div>
+        <div class="feature-item"><span class="fi-icon">🌐</span><div><h4>SEO Optimized</h4><p>Every page is indexable so people find local biodiversity via Google.</p></div></div>
+      </div>
+    </div>
+    <div style="background:linear-gradient(145deg,#0d3320,#1a5c38);border-radius:var(--radius);padding:36px;text-align:center;color:#fff;">
+      <h2 style="font-family:'Lora',serif;font-size:1.7rem;margin-bottom:10px;">Start Exploring</h2>
+      <p style="color:#b5d9c5;margin-bottom:22px;">Try identifying a species or browse our database</p>
+      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="showPage('identify')">📷 Identify a Species</button>
+        <button class="btn-outline" onclick="showPage('explore')">🔍 Browse Database</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== FOOTER ===================== -->
+<footer style="background:#0d3320;color:#7dbf99;padding:40px 28px;margin-top:0;">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;margin-bottom:24px;">
+    <div>
+      <div style="font-family:'Lora',serif;font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:10px;">🦋 NatureID</div>
+      <p style="font-size:.82rem;line-height:1.7;max-width:240px;">AI-powered nature identification for researchers, enthusiasts and citizens. Discover biodiversity around you.</p>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:.85rem;margin-bottom:12px;">Explore</h4>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;">
+        <span style="cursor:pointer;hover:color:#fff;" onclick="showPage('home')">Home</span>
+        <span style="cursor:pointer;" onclick="showPage('identify')">Identify Species</span>
+        <span style="cursor:pointer;" onclick="showPage('explore')">Browse All</span>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:.85rem;margin-bottom:12px;">Resources</h4>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;">
+        <span style="cursor:pointer;" onclick="showPage('about')">About Us</span>
+      </div>
+    </div>
+  </div>
+  <div style="border-top:1px solid #1a5c38;padding-top:16px;text-align:center;font-size:.75rem;color:#4a8c5c;">
+    © 2024 NatureID. Built for biodiversity. 🌿
+  </div>
+</footer>
+
+<script>
+// ============================================================
+// DATABASE
+// ============================================================
+let speciesDB = [
+  { id:"b001", commonName:"Common Jezebel", scientificName:"Delias eucharis", category:"butterfly", family:"Pieridae", description:"One of India's most spectacular butterflies with vibrant yellow, red and orange underwings. Often seen high in tree canopies visiting flowers.", habitat:["Forest edges","Gardens","Wooded areas"], region:["South India","Western Ghats","Kerala"], conservationStatus:"LC", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Common_Jezebel_Delias_eucharis_by_kadavoor.JPG/320px-Common_Jezebel_Delias_eucharis_by_kadavoor.JPG", tags:["colorful","canopy","pieridae"], funFact:"The larvae feed on mistletoe plants that are parasitic on trees.", flightPeriod:"Year-round, peak February–May", wingspan:"65–80 mm", verified:true },
+  { id:"b002", commonName:"Malabar Banded Peacock", scientificName:"Papilio buddha", category:"butterfly", family:"Papilionidae", description:"A stunning endemic butterfly of the Western Ghats with brilliant green and blue iridescent bands. A flagship species of Malabar biodiversity.", habitat:["Dense rainforest","Forest streams","Shola forests"], region:["Kerala","Karnataka","Western Ghats"], conservationStatus:"VU", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Malabar_Banded_Peacock_%28Papilio_buddha%29.jpg/320px-Malabar_Banded_Peacock_%28Papilio_buddha%29.jpg", tags:["endemic","western ghats","rare"], funFact:"Kerala's official state butterfly. Endemic to the Western Ghats and a biodiversity indicator species.", flightPeriod:"March–June, September–November", wingspan:"90–110 mm", verified:true },
+  { id:"b003", commonName:"Tawny Coster", scientificName:"Acraea terpsicore", category:"butterfly", family:"Nymphalidae", description:"A slow-flying orange and black butterfly distasteful to predators. Very common in grasslands and open areas throughout Kerala.", habitat:["Grasslands","Open areas","Roadsides","Gardens"], region:["Kerala","Pan-India"], conservationStatus:"LC", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Acraea_terpsicore_by_kadavoor.JPG/320px-Acraea_terpsicore_by_kadavoor.JPG", tags:["common","grassland","orange"], funFact:"Its slow weak flight is an adaptation — it's toxic so doesn't need to flee quickly.", flightPeriod:"Year-round", wingspan:"45–55 mm", verified:true },
+  { id:"b004", commonName:"Blue Mormon", scientificName:"Papilio polymnestor", category:"butterfly", family:"Papilionidae", description:"The state butterfly of Maharashtra, one of the largest butterflies in India. Features stunning blue patches on black wings.", habitat:["Forests","Gardens","Plantations"], region:["Maharashtra","Kerala","Western Ghats"], conservationStatus:"LC", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Papilio_polymnestor_by_kadavoor.JPG/320px-Papilio_polymnestor_by_kadavoor.JPG", tags:["large","blue","state butterfly"], funFact:"State butterfly of Maharashtra and one of the largest butterflies in India.", flightPeriod:"Year-round, peak monsoon", wingspan:"100–130 mm", verified:true },
+  { id:"b005", commonName:"Crimson Rose", scientificName:"Pachliopta hector", category:"butterfly", family:"Papilionidae", description:"A beautiful swallowtail with crimson patches on black wings. Protected species and state butterfly of Tamil Nadu.", habitat:["Forest edges","Gardens","Coastal areas"], region:["Tamil Nadu","Kerala"], conservationStatus:"LC", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Open_wing_position_of_Pachliopta_hector_%28Linnaeus%2C_1758%29_-_Crimson_Rose_LinDSC_2535-01.jpg/320px-Open_wing_position_of_Pachliopta_hector_%28Linnaeus%2C_1758%29_-_Crimson_Rose_LinDSC_2535-01.jpg", tags:["protected","state butterfly","crimson"], funFact:"State butterfly of Tamil Nadu. Its caterpillars feed on poisonous Aristolochia vines.", flightPeriod:"Year-round", wingspan:"90–100 mm", verified:true },
+  { id:"br001", commonName:"Malabar Whistling Thrush", scientificName:"Myophonus horsfieldii", category:"bird", family:"Muscicapidae", description:"Known as the 'whistling schoolboy' for its loud melodious call. Deep blue plumage with iridescent shoulder patches.", habitat:["Rocky streams","Forest streams","Waterfalls"], region:["Western Ghats","Kerala","Karnataka"], conservationStatus:"LC", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Malabar_whistling_thrush_%28Myophonus_horsfieldii%29_by_Shantanu_Kuveskar.jpg/320px-Malabar_whistling_thrush_%28Myophonus_horsfieldii%29_by_Shantanu_Kuveskar.jpg", tags:["endemic","whistling","stream","melodious"], funFact:"Called the 'Whistling Schoolboy' — sounds like a boy whistling carelessly.", songDescription:"Rich varied melodious whistles", wingspan:"25–28 cm", verified:true },
+  { id:"br002", commonName:"Indian Peacock", scientificName:"Pavo cristatus", category:"bird", family:"Phasianidae", description:"India's national bird, famous for its spectacular iridescent tail. Males display elaborate train to attract females.", habitat:["Forests","Farmlands","Villages"], region:["Pan-India"], conservationStatus:"LC", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Pavo_cristatus_-_Hyderabad%2C_India_-_male-8.jpg/320px-Pavo_cristatus_-_Hyderabad%2C_India_-_male-8.jpg", tags:["national bird","iridescent","display","iconic"], funFact:"The 'tail' is actually the upper tail coverts. The real tail holds up this spectacular train.", songDescription:"Loud wailing 'may-awe' call at dawn and dusk", verified:true },
+  { id:"br003", commonName:"Kerala Laughingthrush", scientificName:"Trochalopteron fairbanki", category:"bird", family:"Leiothrichidae", description:"An endemic bird of the Western Ghats with rich rufous tones. Lives in flocks and fills shola forests with bubbling calls.", habitat:["Shola forests","High altitude grasslands","Tea estates"], region:["Kerala","Western Ghats","Nilgiris"], conservationStatus:"NT", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Montecincla_fairbanki-Kerala_laughingthrush.jpg/320px-Montecincla_fairbanki-Kerala_laughingthrush.jpg", tags:["endemic","shola","social"], funFact:"Recently recognized as a distinct species found only in Kerala's high-altitude shola forests.", songDescription:"Loud laughing cackles in chorus from groups", verified:true },
+  { id:"p001", commonName:"Blue Vanda", scientificName:"Vanda coerulea", category:"plant", family:"Orchidaceae", description:"One of the world's most beautiful orchids with stunning blue-violet flowers. Found in misty shola forests of South India.", habitat:["Montane forests","Shola edges","Epiphytic on trees"], region:["Western Ghats","Kerala","Northeast India"], conservationStatus:"EN", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Vanda_coerulea.jpg/320px-Vanda_coerulea.jpg", tags:["orchid","blue","endangered","epiphytic"], funFact:"Hybridized to create thousands of ornamental varieties. Wild populations face severe pressure from collection.", bloomSeason:"October–December", verified:true },
+  { id:"p002", commonName:"Neelakurinji", scientificName:"Strobilanthes kunthiana", category:"plant", family:"Acanthaceae", description:"The famous 'Blue Mountain flower' that blooms once every 12 years, turning the Nilgiri hills blue.", habitat:["Shola grasslands","Nilgiris","High altitude meadows"], region:["Kerala","Tamil Nadu","Nilgiris"], conservationStatus:"LC", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Neelakurinji.jpg/320px-Neelakurinji.jpg", tags:["12 year cycle","blue","nilgiri","mass flowering"], funFact:"Blooms once in 12 years. The Kurumba tribes use its flowering as a natural calendar.", bloomSeason:"Every 12 years — last 2018, next 2030", verified:true },
+  { id:"p003", commonName:"Teak", scientificName:"Tectona grandis", category:"plant", family:"Lamiaceae", description:"The iconic timber tree of Indian tropical forests. Large leaves and small white flowers in large panicles.", habitat:["Tropical deciduous forests","Plantations"], region:["Kerala","Karnataka","Pan-India"], conservationStatus:"LC", imageUrl:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Tectona_grandis_Blanco2.316.png/220px-Tectona_grandis_Blanco2.316.png", tags:["timber","deciduous","tropical"], funFact:"Teak wood contains natural oils that resist water and insects — prized for centuries in shipbuilding.", bloomSeason:"July–September", verified:true },
+];
+
+const CAT_ICONS = { butterfly:'🦋', bird:'🐦', plant:'🌿', insect:'🪲', mammal:'🦊', reptile:'🦎', all:'🌍' };
+let currentCat = 'all';
+let selectedImage = null;
+let cameraStream = null;
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const btns = document.querySelectorAll('.nav-btn');
+  btns.forEach(b => { if(b.textContent.toLowerCase().includes(name)) b.classList.add('active'); });
+  window.scrollTo(0,0);
+  if(name==='home') renderHome();
+  if(name==='explore') renderExplore();
+  if(name==='admin') renderAdminStats();
+}
+
+// ============================================================
+// HOME
+// ============================================================
+function renderHome() {
+  const cats = speciesDB.reduce((a,s)=>{a[s.category]=(a[s.category]||0)+1;return a;},{});
+  document.getElementById('stat-butterflies').textContent = (cats.butterfly||0)+'+';
+  document.getElementById('stat-birds').textContent = (cats.bird||0)+'+';
+  document.getElementById('stat-plants').textContent = (cats.plant||0)+'+';
+  document.getElementById('stat-total').textContent = speciesDB.length+'+';
+  const featured = speciesDB.filter(s=>s.verified).slice(0,6);
+  document.getElementById('home-featured').innerHTML = featured.map(s=>speciesCardHTML(s)).join('');
+
+  // Build hero mosaic from first 3 verified species with images
+  const mosaicSpecies = speciesDB.filter(s=>s.imageUrl).slice(0,3);
+  const mosaic = document.getElementById('hero-mosaic');
+  if(mosaic && mosaicSpecies.length) {
+    mosaic.innerHTML = `<div class="mosaic-grid">${mosaicSpecies.map((s,i)=>`
+      <div class="mosaic-cell" onclick="showDetail('${s.id}')" style="cursor:pointer;">
+        <img src="${s.imageUrl}" alt="${s.commonName}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="mosaic-fallback" style="display:none;">${CAT_ICONS[s.category]||'🌿'}</div>
+        <div class="mosaic-label">${s.commonName}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+}
+
+function speciesCardHTML(s) {
+  const icon = CAT_ICONS[s.category] || '🌿';
+  return `<div class="species-card" onclick="showDetail('${s.id}')">
+    <div class="species-img">
+      <img src="${s.imageUrl}" alt="${s.commonName}" onerror="this.style.display='none';this.parentElement.querySelector('.fallback-icon').style.display='flex'">
+      <div class="fallback-icon" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:4rem;">${icon}</div>
+      <div class="cat-badge">${icon} ${s.category.charAt(0).toUpperCase()+s.category.slice(1)}</div>
+      <div class="status-badge status-${s.conservationStatus}">${s.conservationStatus}</div>
+    </div>
+    <div class="species-body">
+      <h3>${s.commonName}</h3>
+      <div class="sci">${s.scientificName}</div>
+      <p>${s.description}</p>
+      <div class="region-tags">${s.region.slice(0,2).map(r=>`<span class="region-tag">📍 ${r}</span>`).join('')}</div>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// EXPLORE
+// ============================================================
+function setCat(el, cat) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-filter').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderExplore();
+}
+
+function renderExplore() {
+  const q = (document.getElementById('explore-search')?.value||'').toLowerCase();
+  const filtered = speciesDB.filter(s => {
+    const matchCat = currentCat==='all' || s.category===currentCat;
+    const matchQ = !q || s.commonName.toLowerCase().includes(q) || s.scientificName.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || (s.tags||[]).some(t=>t.includes(q)) || (s.region||[]).some(r=>r.toLowerCase().includes(q));
+    return matchCat && matchQ;
+  });
+  document.getElementById('explore-count').textContent = `${filtered.length} species found${q?' for "'+q+'"':''}${currentCat!=='all'?' in '+currentCat+'s':''}`;
+  document.getElementById('explore-grid').innerHTML = filtered.length
+    ? filtered.map(s=>speciesCardHTML(s)).join('')
+    : `<div class="empty-state" style="grid-column:1/-1;"><div class="es-icon">🔍</div><p style="font-weight:500;margin-bottom:6px;">No species found</p><p style="font-size:.82rem;">Try different keywords or a broader search term</p></div>`;
+}
+
+// ============================================================
+// SPECIES DETAIL
+// ============================================================
+function showDetail(id) {
+  const s = speciesDB.find(x=>x.id===id);
+  if(!s) return;
+  const icon = CAT_ICONS[s.category]||'🌿';
+  const statusBg = {LC:'#dcfce7',NT:'#fef9c3',VU:'#ffedd5',EN:'#fee2e2',CR:'#fce7f3'};
+  const statusColor = {LC:'#166534',NT:'#854d0e',VU:'#9a3412',EN:'#991b1b',CR:'#9d174d'};
+  const statusLabel = {LC:'Least Concern',NT:'Near Threatened',VU:'Vulnerable',EN:'Endangered',CR:'Critically Endangered'};
+  const related = speciesDB.filter(x=>x.category===s.category&&x.id!==s.id).slice(0,3);
+
+  document.getElementById('detail-content').innerHTML = `
+    <button class="back-btn" onclick="history.back(); showPage('explore');">← Back to Explore</button>
+    <div class="detail-grid">
+      <div>
+        <div class="detail-img">
+          <img src="${s.imageUrl}" alt="${s.commonName}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="detail-img-placeholder" style="display:none;">${icon}</div>
+        </div>
+        ${s.funFact?`<div class="fact-box"><div class="fact-label">💡 Fun Fact</div><p>${s.funFact}</p></div>`:''}
+      </div>
+      <div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <span style="background:#f0f4f0;color:#374151;font-size:.75rem;padding:3px 12px;border-radius:99px;">${icon} ${s.category.charAt(0).toUpperCase()+s.category.slice(1)}</span>
+          <span style="font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px;background:${statusBg[s.conservationStatus]||'#f0f0f0'};color:${statusColor[s.conservationStatus]||'#374151'}">${s.conservationStatus} — ${statusLabel[s.conservationStatus]||''}</span>
+          ${s.verified?'<span style="background:#dbeafe;color:#1e40af;font-size:.72rem;padding:3px 10px;border-radius:99px;">✓ Verified</span>':''}
+        </div>
+        <h1 class="detail-title">${s.commonName}</h1>
+        <p class="detail-sci">${s.scientificName}</p>
+        <p class="detail-family">Family: ${s.family||'—'}</p>
+        <p class="detail-desc">${s.description}</p>
+        <div class="info-grid">
+          ${s.habitat?.length?`<div class="info-box"><div class="info-lbl">🏠 Habitat</div><div class="info-tags">${s.habitat.map(h=>`<span class="info-tag">${h}</span>`).join('')}</div></div>`:''}
+          ${s.region?.length?`<div class="info-box"><div class="info-lbl">📍 Region</div><div class="info-tags">${s.region.map(r=>`<span class="info-tag">${r}</span>`).join('')}</div></div>`:''}
+        </div>
+        <div style="background:#f7f9f7;border-radius:10px;padding:14px;border:1px solid #e8f0eb;margin-bottom:18px;">
+          <p style="font-size:.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Species Details</p>
+          <table class="spec-table">
+            ${s.wingspan?`<tr><td>Wingspan / Size</td><td>${s.wingspan}</td></tr>`:''}
+            ${s.flightPeriod?`<tr><td>Flight Period</td><td>${s.flightPeriod}</td></tr>`:''}
+            ${s.bloomSeason?`<tr><td>Bloom Season</td><td>${s.bloomSeason}</td></tr>`:''}
+            ${s.songDescription?`<tr><td>Song / Call</td><td>${s.songDescription}</td></tr>`:''}
+          </table>
+        </div>
+        ${s.tags?.length?`<div style="margin-bottom:18px;"><p style="font-size:.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Tags</p><div style="display:flex;flex-wrap:wrap;gap:6px;">${s.tags.map(t=>`<span class="tag-pill">#${t}</span>`).join('')}</div></div>`:''}
+        <button class="btn-identify" onclick="showPage('identify')" style="border-radius:12px;">📷 Identify Similar Species</button>
+      </div>
+    </div>
+    ${related.length?`<div style="margin-top:40px;"><h2 style="font-family:'Lora',serif;font-size:1.4rem;color:var(--green-dark);margin-bottom:18px;">Related ${s.category.charAt(0).toUpperCase()+s.category.slice(1)}s</h2><div class="species-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));">${related.map(x=>speciesCardHTML(x)).join('')}</div></div>`:''}
+  `;
+  document.getElementById('page-detail').classList.remove('active');
+  document.getElementById('page-detail').classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>{ if(p.id!=='page-detail') p.classList.remove('active'); });
+  window.scrollTo(0,0);
+}
+
+// ============================================================
+// IDENTIFY
+// ============================================================
+let activeIdTab = 'upload';
+
+function switchTab(tab) {
+  activeIdTab = tab;
+  ['upload','camera','text'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===tab?'block':'none';
+    document.querySelectorAll('.id-tab').forEach((b,i)=>{ if(['upload','camera','text'][i]===tab) b.classList.add('active'); else b.classList.remove('active'); });
+  });
+}
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function handleDragLeave() { document.getElementById('upload-zone').classList.remove('drag'); }
+function handleDrop(e) {
+  e.preventDefault(); document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if(file) processFile(file);
+}
+function handleFileInput(input) { if(input.files[0]) processFile(input.files[0]); }
+function processFile(file) {
+  if(!file.type.startsWith('image/')) { showIdError('Please upload an image file.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    selectedImage = e.target.result;
+    document.getElementById('upload-empty').style.display='none';
+    document.getElementById('upload-preview').style.display='block';
+    document.getElementById('preview-img').src = selectedImage;
+    document.getElementById('remove-wrap').style.display='block';
+    hideIdError();
+  };
+  reader.readAsDataURL(file);
+}
+function removeImage() {
+  selectedImage=null;
+  document.getElementById('upload-empty').style.display='block';
+  document.getElementById('upload-preview').style.display='none';
+  document.getElementById('remove-wrap').style.display='none';
+  document.getElementById('file-input').value='';
+}
+
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const video = document.getElementById('camera-video');
+    video.srcObject = cameraStream; video.play();
+    video.style.display='block';
+    document.getElementById('camera-empty').style.display='none';
+    document.getElementById('camera-controls').style.display='block';
+  } catch { showIdError('Camera access denied. Please allow camera permissions.'); }
+}
+function capturePhoto() {
+  const video = document.getElementById('camera-video');
+  const canvas = document.createElement('canvas');
+  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+  canvas.getContext('2d').drawImage(video,0,0);
+  selectedImage = canvas.toDataURL('image/jpeg');
+  cameraStream?.getTracks().forEach(t=>t.stop());
+  video.style.display='none';
+  document.getElementById('camera-controls').style.display='none';
+  document.getElementById('camera-result').style.display='block';
+  document.getElementById('camera-img').src=selectedImage;
+}
+function retakePhoto() {
+  selectedImage=null;
+  document.getElementById('camera-result').style.display='none';
+  document.getElementById('camera-empty').style.display='block';
+}
+
+function showIdError(msg) {
+  const el = document.getElementById('id-error'); el.textContent=msg; el.classList.add('show');
+}
+function hideIdError() {
+  document.getElementById('id-error').classList.remove('show');
+}
+
+async function identifySpecies() {
+  const textInput = document.getElementById('text-input')?.value?.trim();
+  if(!selectedImage && !textInput) { showIdError('Please upload an image or enter a description.'); return; }
+  hideIdError();
+  document.getElementById('results-empty').style.display='none';
+  document.getElementById('results-loading').style.display='block';
+  document.getElementById('results-content').style.display='none';
+  document.getElementById('identify-btn').disabled=true;
+
+  const dots = document.querySelectorAll('.step-dot');
+  let step=0;
+  const stepInterval = setInterval(()=>{ dots.forEach((d,i)=>d.classList.toggle('active',i===step)); step=(step+1)%4; },600);
+
+  try {
+    let result;
+
+    if(selectedImage) {
+      // Use iNaturalist Vision API for image identification
+      result = await identifyWithINaturalist(selectedImage);
+    }
+
+    if(!result && textInput) {
+      // Use iNaturalist taxa search for text input
+      result = await searchINaturalistByText(textInput);
+    }
+
+    if(!result) result = localFallback(textInput||'');
+
+    clearInterval(stepInterval);
+    showResults(result);
+  } catch(e) {
+    clearInterval(stepInterval);
+    showResults(localFallback(textInput||''));
+  } finally {
+    document.getElementById('results-loading').style.display='none';
+    document.getElementById('identify-btn').disabled=false;
+  }
+}
+
+// ── iNaturalist Vision API (image upload) ──────────────────────
+async function identifyWithINaturalist(dataUrl) {
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const formData = new FormData();
+    formData.append('image', blob, 'photo.jpg');
+    const uploadRes = await fetch('https://api.inaturalist.org/v1/computervision/score_image', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: formData,
+    });
+    if(!uploadRes.ok) throw new Error('status ' + uploadRes.status);
+    const data = await uploadRes.json();
+    const results = (data.results || []).slice(0, 5);
+    if(!results.length) return null;
+    const matches = results.map((r, i) => {
+      const taxon = r.taxon || {};
+      const score = Math.round((r.combined_score || r.vision_score || 0) * 100);
+      const localMatch = findLocalMatch(taxon.name, taxon.preferred_common_name);
+      return {
+        id: localMatch?.id || 'inat-' + taxon.id,
+        commonName: taxon.preferred_common_name || localMatch?.commonName || taxon.name,
+        scientificName: taxon.name || '',
+        category: mapINatIconicTaxon(taxon.iconic_taxon_name),
+        confidence: Math.min(score, 99),
+        description: taxon.wikipedia_summary
+          ? taxon.wikipedia_summary.slice(0, 220) + '…'
+          : (localMatch?.description || 'Species identified via iNaturalist AI.'),
+        imageUrl: taxon.default_photo?.medium_url || localMatch?.imageUrl || '',
+        conservationStatus: localMatch?.conservationStatus || 'LC',
+        region: localMatch?.region || [],
+        funFact: localMatch?.funFact || '',
+        inatId: taxon.id,
+        inatUrl: taxon.id ? `https://www.inaturalist.org/taxa/${taxon.id}` : null,
+        family: localMatch?.family || '',
+        habitat: localMatch?.habitat || [],
+        tags: localMatch?.tags || [],
+        fromINat: true,
+      };
+    });
+    const top = matches[0];
+    return {
+      matches,
+      aiAnalysis: `iNaturalist AI identified <strong>${top.commonName || top.scientificName}</strong> with ${top.confidence}% confidence. Powered by iNaturalist's global database of 300,000+ species.`,
+      imageDescription: 'Analyzed by iNaturalist Vision AI',
+      source: 'inaturalist'
+    };
+  } catch(e) {
+    console.warn('iNat vision failed:', e.message);
+    return null;
+  }
+}
+
+// ── iNaturalist Taxa Search via JSONP (bypasses CORS) ──────────
+function searchINaturalistByText(query) {
+  return new Promise((resolve) => {
+    const cbName = '_inat_' + Date.now();
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      cleanup(); resolve(null);
+    }, 8000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = (data) => {
+      cleanup();
+      try {
+        const results = (data.results || []).slice(0, 4);
+        if(!results.length) { resolve(null); return; }
+        const matches = results.map((taxon, i) => {
+          const localMatch = findLocalMatch(taxon.name, taxon.preferred_common_name);
+          return {
+            id: localMatch?.id || 'inat-' + taxon.id,
+            commonName: taxon.preferred_common_name || localMatch?.commonName || taxon.name,
+            scientificName: taxon.name || '',
+            category: mapINatIconicTaxon(taxon.iconic_taxon_name),
+            confidence: Math.max(90 - i * 14, 35),
+            description: taxon.wikipedia_summary
+              ? taxon.wikipedia_summary.slice(0, 220) + '…'
+              : (localMatch?.description || ''),
+            imageUrl: taxon.default_photo?.medium_url || localMatch?.imageUrl || '',
+            conservationStatus: localMatch?.conservationStatus || 'LC',
+            region: localMatch?.region || [],
+            funFact: localMatch?.funFact || '',
+            inatId: taxon.id,
+            inatUrl: `https://www.inaturalist.org/taxa/${taxon.id}`,
+            family: localMatch?.family || '',
+            habitat: localMatch?.habitat || [],
+            tags: localMatch?.tags || [],
+            fromINat: true,
+          };
+        });
+        resolve({
+          matches,
+          aiAnalysis: `Found <strong>${matches.length} result${matches.length>1?'s':''}</strong> for "<em>${query}</em>" from iNaturalist's global species database.`,
+          imageDescription: query,
+          source: 'inaturalist'
+        });
+      } catch(e) { resolve(null); }
+    };
+
+    script.onerror = () => { cleanup(); resolve(null); };
+    script.src = `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(query)}&per_page=4&rank=species,subspecies&locale=en&callback=${cbName}`;
+    document.head.appendChild(script);
+  });
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function findLocalMatch(sciName, commonName) {
+  if(!sciName && !commonName) return null;
+  const sci = (sciName||'').toLowerCase();
+  const com = (commonName||'').toLowerCase();
+  return speciesDB.find(s =>
+    s.scientificName.toLowerCase() === sci ||
+    s.commonName.toLowerCase() === com ||
+    s.scientificName.toLowerCase().startsWith(sci.split(' ')[0])
+  ) || null;
+}
+
+function mapINatIconicTaxon(iconic) {
+  const map = {
+    'Insecta':'insect','Lepidoptera':'butterfly','Aves':'bird',
+    'Plantae':'plant','Mammalia':'mammal','Reptilia':'reptile',
+    'Amphibia':'reptile','Arachnida':'insect','Actinopterygii':'insect',
+  };
+  return map[iconic] || 'insect';
+}
+
+function localFallback(query) {
+  const q = query.toLowerCase();
+  let matches = q ? speciesDB.filter(s =>
+    s.commonName.toLowerCase().includes(q) ||
+    s.scientificName.toLowerCase().includes(q) ||
+    s.category.includes(q) ||
+    (s.tags||[]).some(t=>t.includes(q)) ||
+    (s.region||[]).some(r=>r.toLowerCase().includes(q)) ||
+    s.description.toLowerCase().includes(q)
+  ).slice(0,3) : [];
+  if(!matches.length) matches = speciesDB.slice(0,3);
+  return {
+    matches: matches.map((s,i)=>({...s, confidence: Math.max(75-i*15, 30)})),
+    aiAnalysis: q
+      ? `Showing local database matches for "<em>${query}</em>". For real-time AI identification, upload a photo.`
+      : `Showing sample species from our local database.`,
+    imageDescription: q||'',
+    source: 'local'
+  };
+}
+
+function showResults(result) {
+  document.getElementById('results-loading').style.display='none';
+  document.getElementById('results-empty').style.display='none';
+  document.getElementById('results-content').style.display='block';
+  const icon = s => CAT_ICONS[s.category]||'🌿';
+  const sourceLabel = result.source==='inaturalist'
+    ? `<div style="display:flex;align-items:center;gap:6px;padding:8px 16px 0;"><img src="https://www.inaturalist.org/favicon.ico" style="width:14px;height:14px;" onerror="this.style.display='none'"><span style="font-size:.72rem;color:var(--text-muted);">Powered by <strong>iNaturalist</strong> — 300,000+ species database</span></div>`
+    : `<div style="padding:8px 16px 0;font-size:.72rem;color:var(--text-muted);">📚 Local database results</div>`;
+
+  document.getElementById('results-content').innerHTML = `
+    ${result.aiAnalysis?`<div class="ai-note"><div class="ai-label">🌿 Species Identification</div><p>${result.aiAnalysis}</p></div>`:''}
+    ${sourceLabel}
+    <div style="padding:8px 16px 4px;font-size:.82rem;font-weight:600;color:var(--text-muted);">Top Matches (${result.matches.length})</div>
+    <div class="match-list">
+      ${result.matches.map((m,i)=>`
+        <div class="match-item ${i===0?'top':''}" onclick="${m.fromINat && !m.id.startsWith('b') && !m.id.startsWith('br') && !m.id.startsWith('p') ? `openINat('${m.inatUrl||''}','${m.id}')` : `showDetail('${m.id}')`}">
+          <div class="match-thumb">
+            ${m.imageUrl ? `<img src="${m.imageUrl}" alt="${m.commonName||''}" onerror="this.style.display='none';this.parentElement.textContent='${icon(m)}'">` : `<span style="font-size:1.8rem;">${icon(m)}</span>`}
+          </div>
+          <div class="match-info">
+            <h4>${m.commonName||m.scientificName||'Unknown'}${i===0?'<span class="best-tag">Best Match</span>':''}</h4>
+            <div class="match-sci">${m.scientificName||''}</div>
+            <div class="conf-bar">
+              <div class="conf-track"><div class="conf-fill" style="width:${m.confidence}%"></div></div>
+              <span class="conf-pct">${m.confidence}%</span>
+            </div>
+            ${m.description ? `<div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;line-height:1.4;">${m.description.slice(0,100)}…</div>` : ''}
+            ${m.inatUrl ? `<a href="${m.inatUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:.72rem;color:var(--green-bright);margin-top:4px;display:inline-block;text-decoration:none;">View on iNaturalist ↗</a>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+function adminLogin() {
+  const key = document.getElementById('admin-key-input').value;
+  if(key === 'natureid-admin-2024') {
+    document.getElementById('admin-login-wrap').style.display='none';
+    document.getElementById('admin-dashboard').style.display='block';
+    renderAdminStats();
+  } else {
+    const err = document.getElementById('admin-login-error');
+    err.textContent='Invalid key. Use: natureid-admin-2024'; err.classList.add('show');
+  }
+}
+function adminLogout() {
+  document.getElementById('admin-login-wrap').style.display='block';
+  document.getElementById('admin-dashboard').style.display='none';
+  document.getElementById('admin-key-input').value='';
+}
+
+function switchAdminTab(tab) {
+  ['dashboard','add','list'].forEach(t=>{
+    document.getElementById('atab-'+t).style.display = t===tab?'block':'none';
+    document.querySelectorAll('.admin-tab').forEach((b,i)=>{ if(['dashboard','add','list'][i]===tab) b.classList.add('active'); else b.classList.remove('active'); });
+  });
+  if(tab==='list') renderAdminList();
+}
+
+function renderAdminStats() {
+  const cats = speciesDB.reduce((a,s)=>{a[s.category]=(a[s.category]||0)+1;return a;},{});
+  document.getElementById('admin-stats-cards').innerHTML = [
+    {icon:'🦋',label:'Butterflies',count:cats.butterfly||0},
+    {icon:'🐦',label:'Birds',count:cats.bird||0},
+    {icon:'🌿',label:'Plants',count:cats.plant||0},
+    {icon:'🔬',label:'Total Species',count:speciesDB.length},
+  ].map(c=>`<div class="stat-card"><div class="sc-icon">${c.icon}</div><div class="sc-num">${c.count}</div><div class="sc-lbl">${c.label}</div></div>`).join('');
+}
+
+function renderAdminList() {
+  document.getElementById('list-count').textContent = `All Species (${speciesDB.length})`;
+  document.getElementById('admin-table-body').innerHTML = speciesDB.map((s,i)=>`
+    <tr>
+      <td style="color:#9ca3af;">${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="position:relative;width:40px;height:40px;flex-shrink:0;">
+            <img id="thumb-${s.id}" src="${s.imageUrl||''}" alt=""
+              style="width:40px;height:40px;border-radius:8px;object-fit:cover;background:#f0f0f0;"
+              onerror="this.src='';this.style.background='#e8f5ee'">
+            <button onclick="editImage('${s.id}')" title="Change photo"
+              style="position:absolute;inset:0;background:rgba(0,0,0,0.45);border:none;border-radius:8px;
+              color:#fff;font-size:.7rem;cursor:pointer;opacity:0;transition:opacity .2s;display:flex;align-items:center;justify-content:center;"
+              onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">📷</button>
+          </div>
+          <div><p style="font-weight:500;font-size:.88rem;">${s.commonName}</p><p style="font-size:.75rem;color:var(--green-bright);font-style:italic;">${s.scientificName}</p></div>
+        </div>
+      </td>
+      <td style="text-transform:capitalize;">${CAT_ICONS[s.category]} ${s.category}</td>
+      <td><span class="status-badge status-${s.conservationStatus}">${s.conservationStatus}</span></td>
+      <td style="font-size:.8rem;color:var(--text-muted);">${(s.region||[]).slice(0,2).join(', ')}</td>
+      <td style="display:flex;gap:8px;align-items:center;">
+        <span class="view-link" onclick="showDetail('${s.id}')">View →</span>
+        <button onclick="editImage('${s.id}')"
+          style="background:#f0faf4;border:1px solid #c4e8d0;color:var(--green-mid);font-size:.75rem;
+          padding:4px 10px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;">📷 Photo</button>
+      </td>
+    </tr>`).join('');
+}
+
+function saveSpecies() {
+  const commonName = document.getElementById('f-commonName').value.trim();
+  const scientificName = document.getElementById('f-scientificName').value.trim();
+  const description = document.getElementById('f-description').value.trim();
+  const errEl = document.getElementById('add-error');
+  const succEl = document.getElementById('add-success');
+  errEl.style.display='none'; succEl.style.display='none';
+
+  if(!commonName||!scientificName||!description) {
+    errEl.textContent='Please fill in required fields: Common Name, Scientific Name, Description.';
+    errEl.style.display='block'; return;
+  }
+
+  const newSpecies = {
+    id: 'custom-'+Date.now(),
+    commonName, scientificName,
+    category: document.getElementById('f-category').value,
+    family: document.getElementById('f-family').value.trim(),
+    description,
+    habitat: document.getElementById('f-habitat').value.split(',').map(h=>h.trim()).filter(Boolean),
+    region: document.getElementById('f-region').value.split(',').map(r=>r.trim()).filter(Boolean),
+    conservationStatus: document.getElementById('f-status').value,
+    imageUrl: document.getElementById('f-imageUrl').value.trim(),
+    tags: document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    funFact: document.getElementById('f-funFact').value.trim(),
+    wingspan: document.getElementById('f-wingspan').value.trim(),
+    flightPeriod: document.getElementById('f-period').value.trim(),
+    songDescription: document.getElementById('f-song').value.trim(),
+    addedBy:'admin', addedAt: new Date().toISOString().split('T')[0], verified:false
+  };
+
+  speciesDB.push(newSpecies);
+  renderAdminStats();
+  succEl.innerHTML = `✅ <strong>"${commonName}"</strong> added successfully! ID: <code>${newSpecies.id}</code>`;
+  succEl.style.display='block';
+  clearForm();
+  showToast('✅ Species added to database!');
+}
+
+function clearForm() {
+  ['f-commonName','f-scientificName','f-family','f-description','f-funFact','f-habitat','f-region','f-tags','f-imageUrl','f-wingspan','f-period','f-song'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('f-category').value='butterfly';
+  document.getElementById('f-status').value='LC';
+  document.getElementById('add-error').style.display='none';
+}
+
+// ── Image Editor ──────────────────────────────────────────────
+function editImage(speciesId) {
+  const s = speciesDB.find(x=>x.id===speciesId);
+  if(!s) return;
+
+  // Remove any existing modal
+  const existing = document.getElementById('img-modal');
+  if(existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'img-modal';
+  modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;
+    display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);`;
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:28px;max-width:500px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.3);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <h3 style="font-family:'Lora',serif;font-size:1.2rem;color:var(--green-dark);">📷 Update Photo</h3>
+        <button onclick="document.getElementById('img-modal').remove()"
+          style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#9ca3af;line-height:1;">×</button>
+      </div>
+      <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px;">
+        Species: <strong style="color:var(--green-dark);">${s.commonName}</strong>
+      </p>
+
+      <!-- Current image preview -->
+      <div style="background:#f0faf4;border-radius:12px;overflow:hidden;height:180px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;">
+        <img id="modal-preview" src="${s.imageUrl||''}" alt="${s.commonName}"
+          style="width:100%;height:100%;object-fit:cover;"
+          onerror="this.style.display='none';document.getElementById('modal-fallback').style.display='flex'">
+        <div id="modal-fallback" style="display:${s.imageUrl?'none':'flex'};font-size:4rem;align-items:center;justify-content:center;width:100%;height:100%;">${CAT_ICONS[s.category]||'🌿'}</div>
+      </div>
+
+      <!-- Option 1: URL input -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Paste Image URL</label>
+        <div style="display:flex;gap:8px;">
+          <input id="modal-url-input" type="text" value="${s.imageUrl||''}" placeholder="https://..."
+            style="flex:1;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:.85rem;outline:none;font-family:'DM Sans',sans-serif;"
+            oninput="previewModalUrl(this.value)"
+            onfocus="this.style.borderColor='var(--green-bright)'" onblur="this.style.borderColor='#e2e8f0'">
+          <button onclick="previewModalUrl(document.getElementById('modal-url-input').value)"
+            style="background:var(--green-bright);color:#fff;border:none;padding:10px 16px;border-radius:10px;cursor:pointer;font-size:.85rem;font-family:'DM Sans',sans-serif;">Preview</button>
+        </div>
+      </div>
+
+      <!-- Option 2: Upload from device -->
+      <div style="margin-bottom:20px;">
+        <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Or Upload from Device</label>
+        <label style="display:flex;align-items:center;gap:8px;background:#f7f9f7;border:1.5px dashed #c4dece;
+          border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .2s;"
+          onmouseover="this.style.borderColor='var(--green-bright)'" onmouseout="this.style.borderColor='#c4dece'">
+          <span style="font-size:1.3rem;">🖼️</span>
+          <span style="font-size:.85rem;color:var(--text-muted);">Click to choose a photo from your device</span>
+          <input type="file" accept="image/*" style="display:none;" onchange="handleModalUpload(this, '${speciesId}')">
+        </label>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button onclick="saveModalImage('${speciesId}')"
+          style="flex:1;background:var(--green-dark);color:#fff;border:none;padding:12px;border-radius:12px;
+          font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;">
+          💾 Save Photo
+        </button>
+        <button onclick="document.getElementById('img-modal').remove()"
+          style="padding:12px 20px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;
+          font-family:'DM Sans',sans-serif;font-size:.9rem;cursor:pointer;color:var(--text-muted);">
+          Cancel
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+function previewModalUrl(url) {
+  const img = document.getElementById('modal-preview');
+  const fallback = document.getElementById('modal-fallback');
+  if(!url) return;
+  img.style.display = 'block';
+  img.src = url;
+  img.onerror = () => { img.style.display='none'; fallback.style.display='flex'; };
+  img.onload = () => { fallback.style.display='none'; };
+}
+
+function handleModalUpload(input, speciesId) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    document.getElementById('modal-url-input').value = dataUrl;
+    previewModalUrl(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveModalImage(speciesId) {
+  const url = document.getElementById('modal-url-input').value.trim();
+  if(!url) { showToast('Please enter or upload an image first.', true); return; }
+  const s = speciesDB.find(x=>x.id===speciesId);
+  if(!s) return;
+  s.imageUrl = url;
+  // Update thumbnail in table
+  const thumb = document.getElementById('thumb-'+speciesId);
+  if(thumb) { thumb.src = url; thumb.style.background='#e8f5ee'; }
+  document.getElementById('img-modal').remove();
+  showToast('✅ Photo updated for ' + s.commonName);
+  // Refresh home mosaic if visible
+  renderHome();
+}
+
+
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(isError?' error':'');
+  setTimeout(()=>t.className='toast',3000);
+}
+
+function openINat(url, id) {
+  const local = speciesDB.find(s=>s.id===id);
+  if(local) { showDetail(id); return; }
+  if(url) window.open(url, '_blank');
+}
+
+// ── Hidden admin access via URL hash ──────────────────────────
+// Access admin panel by adding #admin to the URL: yourfile.html#admin
+function checkAdminHash() {
+  if(window.location.hash === '#admin') {
+    showPage('admin');
+    // Clean hash from URL without reload
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+}
+window.addEventListener('hashchange', checkAdminHash);
+
+// Init
+renderHome();
+renderExplore();
+checkAdminHash();
+</script>
+</body>
+</html>
